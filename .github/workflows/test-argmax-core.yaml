@@ -1,0 +1,106 @@
+name: Test ARG_MAX Core
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'entrypoint.sh'
+      - 'action.yml'
+      - '.github/workflows/test-argmax-core.yaml'
+
+jobs:
+  test-argmax-limits:
+    runs-on: ubuntu-latest
+    name: Test Argument List Limits
+    
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        
+      - name: Get system ARG_MAX
+        id: argmax
+        run: |
+          ARG_MAX=$(getconf ARG_MAX)
+          echo "System ARG_MAX: $ARG_MAX"
+          echo "argmax=$ARG_MAX" >> $GITHUB_OUTPUT
+          
+      - name: Test small argument - should pass
+        run: |
+          # Create a small environment variable (well under ARG_MAX)
+          SMALL_VAR="$(head -c 1000 < /dev/zero | tr '\0' 'A')"
+          env MYVAR="$SMALL_VAR" cat /dev/null
+          echo "Small argument test passed"
+          
+      - name: Test large argument - should fail
+        continue-on-error: true
+        id: large-test
+        run: |
+          # Try to create an environment variable that's close to ARG_MAX
+          # This should fail on most systems
+          ARG_MAX=${{ steps.argmax.outputs.argmax }}
+          LARGE_SIZE=$((ARG_MAX - 10000))  # Leave some buffer for other args
+          echo "Attempting to create variable of size: $LARGE_SIZE"
+          LARGE_VAR="$(head -c $LARGE_SIZE < /dev/zero | tr '\0' 'A')"
+          env MYVAR="$LARGE_VAR" cat /dev/null
+          echo "Large argument test unexpectedly passed"
+          
+      - name: Verify large test failed as expected
+        run: |
+          if [ "${{ steps.large-test.outcome }}" = "failure" ]; then
+            echo "✅ Large argument test failed as expected (demonstrates ARG_MAX limit)"
+          else
+            echo "❌ Large argument test should have failed but didn't"
+            exit 1
+          fi
+          
+      - name: Test file-based approach - should pass
+        run: |
+          # Create a large file and read from it instead of using environment variables
+          ARG_MAX=${{ steps.argmax.outputs.argmax }}
+          LARGE_SIZE=$((ARG_MAX - 10000))
+          echo "Creating file with size: $LARGE_SIZE"
+          head -c $LARGE_SIZE < /dev/zero | tr '\0' 'A' > large_content.txt
+          
+          # This should work because we're not passing the content as an argument
+          wc -c large_content.txt
+          echo "✅ File-based approach works even with large content"
+          
+      - name: Demonstrate Docker environment variable limit
+        continue-on-error: true
+        id: docker-test
+        run: |
+          # Build a minimal test image
+          echo 'FROM alpine:latest
+          CMD echo "Docker test"' > Dockerfile.test
+          docker build -f Dockerfile.test -t argmax-test .
+          
+          # Try to run with a large environment variable
+          ARG_MAX=${{ steps.argmax.outputs.argmax }}
+          LARGE_SIZE=$((ARG_MAX / 2))  # Use smaller size for Docker
+          echo "Creating environment variable of size: $LARGE_SIZE for Docker test"
+          LARGE_VAR="$(head -c $LARGE_SIZE < /dev/zero | tr '\0' 'A')"
+          docker run -e "LARGE_VAR=$LARGE_VAR" argmax-test
+          
+      - name: Verify Docker test results
+        run: |
+          if [ "${{ steps.docker-test.outcome }}" = "failure" ]; then
+            echo "✅ Docker large environment variable test failed as expected"
+            echo "This demonstrates the real-world problem with large terraform plan outputs"
+          else
+            echo "⚠️  Docker test passed - environment variable wasn't large enough to trigger the limit"
+          fi
+          
+      - name: Test Docker with file mount (solution)
+        run: |
+          # Demonstrate the solution: use file mounts instead of environment variables
+          ARG_MAX=${{ steps.argmax.outputs.argmax }}
+          LARGE_SIZE=$((ARG_MAX / 2))
+          echo "Creating large content file for Docker mount test"
+          head -c $LARGE_SIZE < /dev/zero | tr '\0' 'A' > large_content_docker.txt
+          
+          # Mount the file instead of passing as environment variable
+          echo 'FROM alpine:latest
+          CMD wc -c /workspace/large_content_docker.txt && echo "File mount approach works!"' > Dockerfile.mount
+          docker build -f Dockerfile.mount -t argmax-mount-test .
+          docker run -v "$(pwd):/workspace" argmax-mount-test
+          echo "✅ Docker file mount approach works with large content"

@@ -28,6 +28,12 @@ if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
   exit 1
 fi
 
+# Validate that we have input content from either environment variable or file
+if [[ -z "$COMMENTER_INPUT" && ( -z "$COMMENTER_INPUT_FILE" || ! -f "$COMMENTER_INPUT_FILE" ) ]]; then
+  echo "Either COMMENTER_INPUT environment variable or COMMENTER_INPUT_FILE must be provided."
+  exit 1
+fi
+
 ###########
 # Logging #
 ###########
@@ -51,8 +57,33 @@ error () {
 parse_args () {
   # Arg 1 is command
   COMMAND=$1
-  # Arg 2 is input file. We strip ANSI colours.
-  RAW_INPUT="$COMMENTER_INPUT"
+  
+  # Read input content - prioritize file over environment variable
+  if [[ -n "$COMMENTER_INPUT_FILE" && -f "$COMMENTER_INPUT_FILE" ]]; then
+    debug "Reading input from file: $COMMENTER_INPUT_FILE"
+    RAW_INPUT=$(cat "$COMMENTER_INPUT_FILE")
+  else
+    debug "Reading input from environment variable"
+    RAW_INPUT="$COMMENTER_INPUT"
+  fi
+  
+  # Read comment prepend - prioritize file over environment variable
+  if [[ -n "$COMMENT_PREPEND_FILE" && -f "$COMMENT_PREPEND_FILE" ]]; then
+    debug "Reading comment prepend from file: $COMMENT_PREPEND_FILE"
+    COMMENT_PREPEND=$(cat "$COMMENT_PREPEND_FILE")
+  fi
+  
+  # Read comment append - prioritize file over environment variable
+  if [[ -n "$COMMENT_APPEND_FILE" && -f "$COMMENT_APPEND_FILE" ]]; then
+    debug "Reading comment append from file: $COMMENT_APPEND_FILE"
+    COMMENT_APPEND=$(cat "$COMMENT_APPEND_FILE")
+  fi
+  
+  # Read GitHub event - prioritize file over environment variable
+  if [[ -n "$GITHUB_EVENT_FILE" && -f "$GITHUB_EVENT_FILE" ]]; then
+    debug "Reading GitHub event from file: $GITHUB_EVENT_FILE"
+    GITHUB_EVENT=$(cat "$GITHUB_EVENT_FILE")
+  fi
 
   # change diff character, a red '-', into a high unicode character \U1f605 (literally 😅)
   # iff not preceded by a literal "/" as in "+/-".

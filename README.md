@@ -26,11 +26,38 @@ This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate
 
 ### Inputs
 
-| Name                 | Requirement | Description                                                       |
-| -------------------- | ----------- | ----------------------------------------------------------------- |
-| `commenter_type`     | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`] |
-| `commenter_input`    | _required_  | The comment to post from a previous step output.                  |
-| `commenter_exitcode` | _required_  | The exit code from a previous step output.                        |
+| Name                     | Requirement | Description                                                       |
+| ------------------------ | ----------- | ----------------------------------------------------------------- |
+| `commenter_type`         | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`] |
+| `commenter_input`        | _optional_  | The comment to post from a previous step output.                  |
+| `commenter_exitcode`     | _required_  | The exit code from a previous step output.                        |
+| `commenter_input_file`   | _optional_  | Path to file containing the input to format (alternative to `commenter_input` for large content) |
+| `comment_prepend_file`   | _optional_  | Path to file containing comment body to prepend (alternative to `comment_prepend` for large content) |
+| `comment_append_file`    | _optional_  | Path to file containing comment body to append (alternative to `comment_append` for large content) |
+| `github_event_file`      | _optional_  | Path to file containing GitHub event JSON (alternative to `GITHUB_EVENT` env var for large content) |
+
+**Note**: Either `commenter_input` or `commenter_input_file` must be provided. File-based inputs take precedence over environment variables when both are provided.
+
+### File-based Inputs for Large Content
+
+When dealing with very large Terraform plan outputs, you may encounter "Argument list too long" errors. This happens because environment variables contribute to the system's argument list limit (ARG_MAX). To solve this, you can use file-based inputs:
+
+```yaml
+# Write large content to files
+- name: Write terraform output to file
+  run: |
+    mkdir -p /tmp/terraform-outputs
+    echo "${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}" > /tmp/terraform-outputs/plan.txt
+
+# Use file-based input instead of environment variable
+- uses: robburger/terraform-pr-commenter@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  with:
+    commenter_type: plan
+    commenter_input_file: /tmp/terraform-outputs/plan.txt
+    commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+```
 
 ### Environment Variables
 
