@@ -3,7 +3,7 @@ FROM hashicorp/terraform:${TERRAFORM_VERSION}
 
 RUN apk add --no-cache -q \
     bash \
-    curl=7.79.1-r0 \
+    curl \
     perl \
     jq
  
