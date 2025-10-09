@@ -29,7 +29,8 @@ if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
 fi
 
 # Validate that we have input content from either environment variable or file
-if [[ -z "$COMMENTER_INPUT" && ( -z "$COMMENTER_INPUT_FILE" || ! -f "$COMMENTER_INPUT_FILE" ) ]]; then
+# Note: File existence will be validated later after path processing in parse_args
+if [[ -z "$COMMENTER_INPUT" && -z "$COMMENTER_INPUT_FILE" ]]; then
   echo "Either COMMENTER_INPUT environment variable or COMMENTER_INPUT_FILE must be provided."
   exit 1
 fi
@@ -59,12 +60,26 @@ parse_args () {
   COMMAND=$1
   
   # Read input content - prioritize file over environment variable
-  if [[ -n "$COMMENTER_INPUT_FILE" && -f "$COMMENTER_INPUT_FILE" ]]; then
-    debug "Reading input from file: $COMMENTER_INPUT_FILE"
-    RAW_INPUT=$(cat "$COMMENTER_INPUT_FILE")
+  if [[ -n "$COMMENTER_INPUT_FILE" ]]; then
+    if [[ -f "$COMMENTER_INPUT_FILE" ]]; then
+      debug "Reading input from file: $COMMENTER_INPUT_FILE"
+      RAW_INPUT=$(cat "$COMMENTER_INPUT_FILE")
+    else
+      error "COMMENTER_INPUT_FILE is specified ($COMMENTER_INPUT_FILE) but file does not exist or is not accessible."
+      error "Note: When running in Docker, file paths must be relative to the working directory or in /tmp."
+      error "File paths on the GitHub Actions runner host (like /home/runner/work/...) are not accessible inside the container."
+      error "Consider copying the file to a relative path or /tmp before calling this action."
+      exit 1
+    fi
   else
     debug "Reading input from environment variable"
     RAW_INPUT="$COMMENTER_INPUT"
+  fi
+  
+  # Validate that we have actual input content
+  if [[ -z "$RAW_INPUT" ]]; then
+    error "No input content available. Either COMMENTER_INPUT environment variable must contain data or COMMENTER_INPUT_FILE must point to a readable file with content."
+    exit 1
   fi
   
   # Read comment prepend - prioritize file over environment variable

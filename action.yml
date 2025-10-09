@@ -81,6 +81,54 @@ runs:
           GITHUB_EVENT_FILE="/tmp/github_event.json"
         fi
         
+        # Copy input files to accessible locations if they exist outside mounted paths
+        if [ -n "$COMMENTER_INPUT_FILE" ] && [ -f "$COMMENTER_INPUT_FILE" ]; then
+          # Check if file is outside mounted paths and copy to /tmp if needed
+          case "$COMMENTER_INPUT_FILE" in
+            /tmp/*|./*)
+              # File is already in accessible location
+              ;;
+            *)
+              # Copy to /tmp with unique name
+              cp "$COMMENTER_INPUT_FILE" "/tmp/commenter_input_$(basename "$COMMENTER_INPUT_FILE")"
+              COMMENTER_INPUT_FILE="/tmp/commenter_input_$(basename "$COMMENTER_INPUT_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$COMMENT_PREPEND_FILE" ] && [ -f "$COMMENT_PREPEND_FILE" ]; then
+          case "$COMMENT_PREPEND_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$COMMENT_PREPEND_FILE" "/tmp/commenter_prepend_$(basename "$COMMENT_PREPEND_FILE")"
+              COMMENT_PREPEND_FILE="/tmp/commenter_prepend_$(basename "$COMMENT_PREPEND_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$COMMENT_APPEND_FILE" ] && [ -f "$COMMENT_APPEND_FILE" ]; then
+          case "$COMMENT_APPEND_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$COMMENT_APPEND_FILE" "/tmp/commenter_append_$(basename "$COMMENT_APPEND_FILE")"
+              COMMENT_APPEND_FILE="/tmp/commenter_append_$(basename "$COMMENT_APPEND_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$GITHUB_EVENT_FILE" ] && [ -f "$GITHUB_EVENT_FILE" ] && [ "$GITHUB_EVENT_FILE" != "/tmp/github_event.json" ]; then
+          case "$GITHUB_EVENT_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$GITHUB_EVENT_FILE" "/tmp/commenter_event_$(basename "$GITHUB_EVENT_FILE")"
+              GITHUB_EVENT_FILE="/tmp/commenter_event_$(basename "$GITHUB_EVENT_FILE")"
+              ;;
+          esac
+        fi
+        
         docker run \
         -e GITHUB_TOKEN \
         -e TF_WORKSPACE \
@@ -119,6 +167,54 @@ runs:
         if [ -z "$GITHUB_EVENT_FILE" ]; then
           echo "$GITHUB_EVENT" > /tmp/github_event.json
           GITHUB_EVENT_FILE="/tmp/github_event.json"
+        fi
+        
+        # Copy input files to accessible locations if they exist outside mounted paths
+        if [ -n "$COMMENTER_INPUT_FILE" ] && [ -f "$COMMENTER_INPUT_FILE" ]; then
+          # Check if file is outside mounted paths and copy to /tmp if needed
+          case "$COMMENTER_INPUT_FILE" in
+            /tmp/*|./*)
+              # File is already in accessible location
+              ;;
+            *)
+              # Copy to /tmp with unique name
+              cp "$COMMENTER_INPUT_FILE" "/tmp/commenter_input_$(basename "$COMMENTER_INPUT_FILE")"
+              COMMENTER_INPUT_FILE="/tmp/commenter_input_$(basename "$COMMENTER_INPUT_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$COMMENT_PREPEND_FILE" ] && [ -f "$COMMENT_PREPEND_FILE" ]; then
+          case "$COMMENT_PREPEND_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$COMMENT_PREPEND_FILE" "/tmp/commenter_prepend_$(basename "$COMMENT_PREPEND_FILE")"
+              COMMENT_PREPEND_FILE="/tmp/commenter_prepend_$(basename "$COMMENT_PREPEND_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$COMMENT_APPEND_FILE" ] && [ -f "$COMMENT_APPEND_FILE" ]; then
+          case "$COMMENT_APPEND_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$COMMENT_APPEND_FILE" "/tmp/commenter_append_$(basename "$COMMENT_APPEND_FILE")"
+              COMMENT_APPEND_FILE="/tmp/commenter_append_$(basename "$COMMENT_APPEND_FILE")"
+              ;;
+          esac
+        fi
+        
+        if [ -n "$GITHUB_EVENT_FILE" ] && [ -f "$GITHUB_EVENT_FILE" ] && [ "$GITHUB_EVENT_FILE" != "/tmp/github_event.json" ]; then
+          case "$GITHUB_EVENT_FILE" in
+            /tmp/*|./*)
+              ;;
+            *)
+              cp "$GITHUB_EVENT_FILE" "/tmp/commenter_event_$(basename "$GITHUB_EVENT_FILE")"
+              GITHUB_EVENT_FILE="/tmp/commenter_event_$(basename "$GITHUB_EVENT_FILE")"
+              ;;
+          esac
         fi
         
         docker run \
