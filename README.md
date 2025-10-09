@@ -259,6 +259,10 @@ In English: "Always run this step, but only on a pull request and only when the 
 
 Feel free to head over to the [Issues](https://github.com/tamu-edu/it-ae-actions-terraform-pr-commenter/issues) tab to see if the issue you're having has already been reported. If not, [open a new one](https://github.com/tamu-edu/it-ae-actions-terraform-pr-commenter/issues/new) and be sure to include as much relevant information as possible, including code-samples, and a description of what you expect to be happening.
 
+### Development & Testing
+
+This repository includes a comprehensive test suite in the `tests/` directory to validate file handling, input validation, and integration scenarios. See [tests/README.md](tests/README.md) for details on running the tests and understanding the validation scenarios.
+
 ## License
 
 [MIT](LICENSE)
