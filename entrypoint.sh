@@ -28,6 +28,13 @@ if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
   exit 1
 fi
 
+# Validate that we have input content from either environment variable or file
+# Note: File existence will be validated later after path processing in parse_args
+if [[ -z "$COMMENTER_INPUT" && -z "$COMMENTER_INPUT_FILE" ]]; then
+  echo "Either COMMENTER_INPUT environment variable or COMMENTER_INPUT_FILE must be provided."
+  exit 1
+fi
+
 ###########
 # Logging #
 ###########
@@ -51,8 +58,47 @@ error () {
 parse_args () {
   # Arg 1 is command
   COMMAND=$1
-  # Arg 2 is input file. We strip ANSI colours.
-  RAW_INPUT="$COMMENTER_INPUT"
+  
+  # Read input content - prioritize file over environment variable
+  if [[ -n "$COMMENTER_INPUT_FILE" ]]; then
+    if [[ -f "$COMMENTER_INPUT_FILE" ]]; then
+      debug "Reading input from file: $COMMENTER_INPUT_FILE"
+      RAW_INPUT=$(cat "$COMMENTER_INPUT_FILE")
+    else
+      error "COMMENTER_INPUT_FILE is specified ($COMMENTER_INPUT_FILE) but file does not exist or is not accessible."
+      error "Note: When running in Docker, file paths must be relative to the working directory or in /tmp."
+      error "File paths on the GitHub Actions runner host (like /home/runner/work/...) are not accessible inside the container."
+      error "Consider copying the file to a relative path or /tmp before calling this action."
+      exit 1
+    fi
+  else
+    debug "Reading input from environment variable"
+    RAW_INPUT="$COMMENTER_INPUT"
+  fi
+  
+  # Validate that we have actual input content
+  if [[ -z "$RAW_INPUT" ]]; then
+    error "No input content available. Either COMMENTER_INPUT environment variable must contain data or COMMENTER_INPUT_FILE must point to a readable file with content."
+    exit 1
+  fi
+  
+  # Read comment prepend - prioritize file over environment variable
+  if [[ -n "$COMMENT_PREPEND_FILE" && -f "$COMMENT_PREPEND_FILE" ]]; then
+    debug "Reading comment prepend from file: $COMMENT_PREPEND_FILE"
+    COMMENT_PREPEND=$(cat "$COMMENT_PREPEND_FILE")
+  fi
+  
+  # Read comment append - prioritize file over environment variable
+  if [[ -n "$COMMENT_APPEND_FILE" && -f "$COMMENT_APPEND_FILE" ]]; then
+    debug "Reading comment append from file: $COMMENT_APPEND_FILE"
+    COMMENT_APPEND=$(cat "$COMMENT_APPEND_FILE")
+  fi
+  
+  # Read GitHub event - prioritize file over environment variable
+  if [[ -n "$GITHUB_EVENT_FILE" && -f "$GITHUB_EVENT_FILE" ]]; then
+    debug "Reading GitHub event from file: $GITHUB_EVENT_FILE"
+    GITHUB_EVENT=$(cat "$GITHUB_EVENT_FILE")
+  fi
 
   # change diff character, a red '-', into a high unicode character \U1f605 (literally 😅)
   # iff not preceded by a literal "/" as in "+/-".
