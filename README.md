@@ -15,7 +15,7 @@ Support (for now) is [limited to Linux](https://help.github.com/en/actions/creat
 This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate` has completed, and the output has been captured. Terraform rarely writes to `stdout` and `stderr` in the same action, so we concatenate the `commenter_input`:
 
 ```yaml
-- uses: robburger/terraform-pr-commenter@v1
+- uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
@@ -50,7 +50,7 @@ When dealing with very large Terraform plan outputs, you may encounter "Argument
     echo "${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}" > /tmp/terraform-outputs/plan.txt
 
 # Use file-based input instead of environment variable
-- uses: robburger/terraform-pr-commenter@v1
+- uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
@@ -82,7 +82,7 @@ jobs:
         uses: actions/checkout@v2
 ...
       - name: Post Plan
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EXPAND_SUMMARY_DETAILS: 'true' # Override global environment variable; expand details just for this step
@@ -130,7 +130,7 @@ jobs:
 
       - name: Post Format
         if: always() && github.ref != 'refs/heads/master' && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         with:
           commenter_type: fmt
           commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
@@ -142,7 +142,7 @@ jobs:
 
       - name: Post Init
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         with:
           commenter_type: init
           commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
@@ -154,7 +154,7 @@ jobs:
 
       - name: Post Validate
         if: always() && github.ref != 'refs/heads/master' && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         with:
           commenter_type: validate
           commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
@@ -166,7 +166,7 @@ jobs:
 
       - name: Post Plan
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         with:
           commenter_type: plan
           commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
@@ -209,7 +209,7 @@ jobs:
 
       - name: Post Init - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
           with:
             commenter_type: init
             commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
@@ -221,7 +221,7 @@ jobs:
 
       - name: Post Plan - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
-        uses: robburger/terraform-pr-commenter@v1
+        uses: tamu-edu/it-ae-actions-terraform-pr-commenter@v1
         with:
           commenter_type: plan
           commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
@@ -257,7 +257,7 @@ In English: "Always run this step, but only on a pull request and only when the 
 
 ## Troubleshooting & Contributing
 
-Feel free to head over to the [Issues](https://github.com/robburger/terraform-pr-commenter/issues) tab to see if the issue you're having has already been reported. If not, [open a new one](https://github.com/robburger/terraform-pr-commenter/issues/new) and be sure to include as much relevant information as possible, including code-samples, and a description of what you expect to be happening.
+Feel free to head over to the [Issues](https://github.com/tamu-edu/it-ae-actions-terraform-pr-commenter/issues) tab to see if the issue you're having has already been reported. If not, [open a new one](https://github.com/tamu-edu/it-ae-actions-terraform-pr-commenter/issues/new) and be sure to include as much relevant information as possible, including code-samples, and a description of what you expect to be happening.
 
 ## License
 
